@@ -64,6 +64,8 @@ from nerfstudio.model_components.ray_generators import RayGenerator
 from nerfstudio.utils.images import BasicImages
 from nerfstudio.utils.misc import IterableWrapper
 
+from nerfstudio.data.dataparsers.rodin_dataparser import RodinDataParserConfig
+
 CONSOLE = Console(width=120)
 
 AnnotatedDataParserUnion = tyro.conf.OmitSubcommandPrefixes[  # Omit prefixes of flags in subcommands.
@@ -81,6 +83,7 @@ AnnotatedDataParserUnion = tyro.conf.OmitSubcommandPrefixes[  # Omit prefixes of
             "monosdf-data": MonoSDFDataParserConfig(),
             "sdfstudio-data": SDFStudioDataParserConfig(),
             "heritage-data": HeritageDataParserConfig(),
+            "rodin-data": RodinDataParserConfig(),
         },
         prefix_names=False,  # Omit prefixes in subcommands themselves.
     )
