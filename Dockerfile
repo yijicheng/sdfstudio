@@ -1,114 +1,56 @@
-# Define base image.
-FROM nvidia/cudagl:11.3.1-devel
+FROM nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04
 
-# Set environment variables.
-## Set non-interactive to prevent asking for user inputs blocking image creation.
-ENV DEBIAN_FRONTEND=noninteractive
-## Set timezone as it is required by some packages.
-ENV TZ=Europe/Berlin
-## CUDA architectures, required by tiny-cuda-nn.
-ENV TCNN_CUDA_ARCHITECTURES=86
-## CUDA Home, required to find CUDA in some packages.
-ENV CUDA_HOME="/usr/local/cuda"
+ENV DEBIAN_FRONTEND noninteractive
 
-# Install required apt packages.
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    cmake \
-    ffmpeg \
-    git \
-    libatlas-base-dev \
-    libboost-filesystem-dev \
-    libboost-graph-dev \
-    libboost-program-options-dev \
-    libboost-system-dev \
-    libboost-test-dev \
-    libcgal-dev \
-    libeigen3-dev \
-    libfreeimage-dev \
-    libgflags-dev \
-    libglew-dev \
-    libgoogle-glog-dev \
-    libmetis-dev \
-    libprotobuf-dev \
-    libqt5opengl5-dev \
-    libsuitesparse-dev \
-    nano \
-    protobuf-compiler \
-    python3.8-dev \
-    python3-pip \
-    qtbase5-dev \
-    wget
+# Basic setup
+ENV CMAKE_VERSION=3.22.2
+ENV PYTHON_VERSION=3.8
 
-# Install GLOG (required by ceres).
-RUN git clone --branch v0.6.0 https://github.com/google/glog.git --single-branch && \
-    cd glog && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    make -j && \
-    make install && \
-    cd ../.. && \
-    rm -r glog
-# Add glog path to LD_LIBRARY_PATH.
-ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/lib"
+ENV PATH="/usr/bin/cmake/bin:${PATH}"
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential git curl ca-certificates \
+        wget vim pkg-config unzip rsync \
+        ninja-build x11-apps \
+    && wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.sh \
+        -q -O /tmp/cmake-install.sh \
+    && chmod u+x /tmp/cmake-install.sh \
+    && mkdir /usr/bin/cmake \
+    && /tmp/cmake-install.sh --skip-license --prefix=/usr/bin/cmake \
+    && rm /tmp/cmake-install.sh \
+    && apt-get install sudo \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Ceres-solver (required by colmap).
-RUN git clone --branch 2.1.0 https://ceres-solver.googlesource.com/ceres-solver.git --single-branch && \
-    cd ceres-solver && \
-    git checkout $(git describe --tags) && \
-    mkdir build && \
-    cd build && \
-    cmake .. -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF && \
-    make -j && \
-    make install && \
-    cd ../.. && \
-    rm -r ceres-solver
+RUN apt-get update && apt-get install ffmpeg libsm6 libxext6 -y
 
-# Install colmap.
-RUN git clone --branch 3.7 https://github.com/colmap/colmap.git --single-branch && \
-    cd colmap && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    make -j && \
-    make install && \
-    cd ../.. && \
-    rm -r colmap
-    
-# Create non root user and setup environment.
-RUN useradd -m -d /home/user -u 1000 user
+# Set working directory
+WORKDIR /opt
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
 
-# Switch to new uer and workdir.
-USER 1000:1000
-WORKDIR /home/user
+# Install Miniconda with given python version
+RUN curl -o ~/miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+     && chmod +x ~/miniconda.sh \
+     && ~/miniconda.sh -b -p /opt/conda \
+     && rm ~/miniconda.sh \
+     && /opt/conda/bin/conda install -y python=${PYTHON_VERSION} \
+	 && /opt/conda/bin/conda clean -ya
+ENV PATH=/opt/conda/bin:$PATH
+ENV PATH=/root/.local/bin:$PATH 
 
-# Add local user binary folder to PATH variable.
-ENV PATH="${PATH}:/home/user/.local/bin"
-SHELL ["/bin/bash", "-c"]
+# Install required libraries
+RUN conda install -y pytorch=1.12.1 torchvision cudatoolkit=11.3 -c pytorch
+    # && conda install -y tensorboard matplotlib scikit-image scipy jupyter  \
+    #     ninja cython typing future pytest black isort flake8 scikit-learn \
+    # && /opt/conda/bin/python -m pip install -U wandb python-dotenv pre-commit nbstripout \
+    #     hydra-core hydra-colorlog hydra-optuna-sweeper rich pytorch-lightning torchmetrics
 
-# Upgrade pip and install packages.
-RUN python3.8 -m pip install --upgrade pip setuptools pathtools promise
-# Install pytorch and submodules.
-RUN python3.8 -m pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
-# Install tynyCUDNN.
-RUN python3.8 -m pip install git+https://github.com/NVlabs/tiny-cuda-nn.git#subdirectory=bindings/torch
 
-# Copy nerfstudio folder and give ownership to user.
-ADD . /home/user/nerfstudio
-USER root
-RUN chown -R user:user /home/user/nerfstudio
-USER 1000:1000
+ENV CUDA_HOME=/usr/local/cuda
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
+ENV PATH=$PATH:$CUDA_HOME/bin
 
-# Install nerfstudio dependencies.
-RUN cd nerfstudio && \
-    python3.8 -m pip install -e . && \
-    cd ..
+# RUN git clone --recurse-submodules -j8 https://github.com/NVlabs/tiny-cuda-nn.git \
+#         && cd /opt/tiny-cuda-nn/bindings/torch \
+#         && pip install -e .
 
-# Change working directory
-WORKDIR /workspace
-
-# Install nerfstudio cli auto completion and enter shell if no command was provided.
-CMD ns-install-cli --mode install && /bin/bash
-
+WORKDIR /
