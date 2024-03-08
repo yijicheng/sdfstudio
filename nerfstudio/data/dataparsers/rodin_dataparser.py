@@ -72,16 +72,17 @@ class Rodin(DataParser):
 
         # Rodin
         image_filenames = sorted([filename for filename in self.data.rglob("*.png")]) if split == 'train' else sorted([filename for filename in self.data.rglob("*.png")])[:20]
+        # image_filenames = sorted([filename for filename in self.data.rglob("*_rgb.png")]) if split == 'train' else sorted([filename for filename in self.data.rglob("*_rgb.png")])[:20]
         CONSOLE.print(f"{self.data}_{split}: {len(image_filenames)}")
         
         
         poses = []
         meta = {}
         for image_filename in image_filenames:
-            # image_id = image_filename.stem
-            # meta = load_from_json(Path("/mnt/blob2/render_output_neutral_hd/") / self.subject /f"metadata_{int(image_id):06}.json")['cameras'][0]
-            image_id = image_filename.stem.split('_')[-2]
-            meta = load_from_json(Path("/mnt/blob2/render_output_neutral_hd/") / self.subject /f"metadata_{int(image_id)-1:06}.json")['cameras'][0]
+            image_id = image_filename.stem
+            meta = load_from_json(Path("/root/blob3/render_output_neutral_hd/") / self.subject /f"metadata_{int(image_id):06}.json")['cameras'][0]
+            # image_id = image_filename.stem.split('_')[-2]
+            # meta = load_from_json(Path("/root/blob3/render_output_neutral_hd/") / self.subject /f"metadata_{int(image_id)-1:06}.json")['cameras'][0]
             poses.append(np.array(meta['transformation']))
         poses = np.array(poses).astype(np.float32)
         

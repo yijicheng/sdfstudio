@@ -399,6 +399,7 @@ class SurfaceModel(Model):
     def get_loss_dict(self, outputs, batch, metrics_dict=None) -> Dict:
         loss_dict = {}
         image = batch["image"].to(self.device)
+        import pdb; pdb.set_trace()
         loss_dict["rgb_loss"] = self.rgb_loss(image, outputs["rgb"])
         if self.training:
             # eikonal loss
@@ -475,6 +476,7 @@ class SurfaceModel(Model):
     def get_metrics_dict(self, outputs, batch) -> Dict:
         metrics_dict = {}
         image = batch["image"].to(self.device)
+        import pdb; pdb.set_trace()
         metrics_dict["psnr"] = self.psnr(outputs["rgb"], image)
         return metrics_dict
 
@@ -536,6 +538,7 @@ class SurfaceModel(Model):
         image = torch.moveaxis(image, -1, 0)[None, ...]
         rgb = torch.moveaxis(rgb, -1, 0)[None, ...]
 
+        import pdb; pdb.set_trace()
         psnr = self.psnr(image, rgb)
         ssim = self.ssim(image, rgb)
         lpips = self.lpips(image, rgb)
