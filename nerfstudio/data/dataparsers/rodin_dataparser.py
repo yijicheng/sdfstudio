@@ -92,7 +92,7 @@ class Rodin(DataParser):
             poses.append(np.array(meta['transformation']))
         poses = np.array(poses).astype(np.float32)
         
-        image_width, image_height = int(meta['resolution'][0]), int(meta['resolution'][1])
+        image_width, image_height = int(meta['resolution'][0]) / 2, int(meta['resolution'][1]) / 2
         focal_length =  meta['focal_length'] / meta['sensor_width']  * image_width
 
         cx = image_width / 2.0

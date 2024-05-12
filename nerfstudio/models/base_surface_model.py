@@ -491,7 +491,7 @@ class SurfaceModel(Model):
         # don't need to normalize here
         # normal = torch.nn.functional.normalize(normal, p=2, dim=-1)
         normal = (normal + 1.0) / 2.0
-
+        # import pdb; pdb.set_trace()
         combined_rgb = torch.cat([image, rgb], dim=1)
         combined_acc = torch.cat([acc], dim=1)
         if "depth" in batch:
@@ -538,7 +538,7 @@ class SurfaceModel(Model):
         image = torch.moveaxis(image, -1, 0)[None, ...]
         rgb = torch.moveaxis(rgb, -1, 0)[None, ...]
 
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()s
         psnr = self.psnr(image, rgb)
         ssim = self.ssim(image, rgb)
         lpips = self.lpips(image, rgb)
