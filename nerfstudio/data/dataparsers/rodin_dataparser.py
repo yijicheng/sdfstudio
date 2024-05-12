@@ -47,6 +47,7 @@ class RodinDataParserConfig(DataParserConfig):
     alpha_color: str = "white"
     """alpha color of background"""
     subject: str = None
+    model_type: str = "rodin"
 
 
 @dataclass
@@ -63,6 +64,7 @@ class Rodin(DataParser):
         self.scale_factor: float = config.scale_factor
         self.alpha_color = config.alpha_color
         self.subject = config.subject
+        self.model_type = config.model_type
 
     def _generate_dataparser_outputs(self, split="train"):
         if self.alpha_color is not None:
@@ -71,18 +73,22 @@ class Rodin(DataParser):
             alpha_color_tensor = None
 
         # Rodin
-        image_filenames = sorted([filename for filename in self.data.rglob("*.png")]) if split == 'train' else sorted([filename for filename in self.data.rglob("*.png")])[:20]
-        # image_filenames = sorted([filename for filename in self.data.rglob("*_rgb.png")]) if split == 'train' else sorted([filename for filename in self.data.rglob("*_rgb.png")])[:20]
+        if self.model_type == "eg3d":
+            image_filenames = sorted([filename for filename in self.data.rglob("*.png")]) if split == 'train' else sorted([filename for filename in self.data.rglob("*.png")])[:20]
+        elif self.model_type == "rodin":
+            image_filenames = sorted([filename for filename in self.data.rglob("*_rgb.png")]) if split == 'train' else sorted([filename for filename in self.data.rglob("*_rgb.png")])[:20]
         CONSOLE.print(f"{self.data}_{split}: {len(image_filenames)}")
         
         
         poses = []
         meta = {}
         for image_filename in image_filenames:
-            image_id = image_filename.stem
-            meta = load_from_json(Path("/root/blob3/render_output_neutral_hd/") / self.subject /f"metadata_{int(image_id):06}.json")['cameras'][0]
-            # image_id = image_filename.stem.split('_')[-2]
-            # meta = load_from_json(Path("/root/blob3/render_output_neutral_hd/") / self.subject /f"metadata_{int(image_id)-1:06}.json")['cameras'][0]
+            if self.model_type == "eg3d":
+                image_id = image_filename.stem
+                meta = load_from_json(Path("/root/blob2/render_output_hd/") / "_Aaron_Adams_5GHCX" /f"metadata_{int(image_id):06}.json")['cameras'][0]
+            elif self.model_type == "rodin":
+                image_id = image_filename.stem.split('_')[-2]
+                meta = load_from_json(Path("/root/blob2/render_output_hd/") / "_Aaron_Adams_5GHCX" /f"metadata_{int(image_id)-1:06}.json")['cameras'][0]
             poses.append(np.array(meta['transformation']))
         poses = np.array(poses).astype(np.float32)
         
