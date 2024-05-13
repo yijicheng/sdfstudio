@@ -85,10 +85,10 @@ class Rodin(DataParser):
         for image_filename in image_filenames:
             if self.model_type == "eg3d":
                 image_id = image_filename.stem
-                meta = load_from_json(Path("/root/blob2/render_output_hd/") / "_Aaron_Adams_5GHCX" /f"metadata_{int(image_id):06}.json")['cameras'][0]
+                meta = load_from_json(Path("/mnt/blob2/render_output_hd/") / "_Aaron_Adams_5GHCX" /f"metadata_{int(image_id):06}.json")['cameras'][0]
             elif self.model_type == "rodin":
                 image_id = image_filename.stem.split('_')[-2]
-                meta = load_from_json(Path("/root/blob2/render_output_hd/") / "_Aaron_Adams_5GHCX" /f"metadata_{int(image_id)-1:06}.json")['cameras'][0]
+                meta = load_from_json(Path("/mnt/blob2/render_output_hd/") / "_Aaron_Adams_5GHCX" /f"metadata_{int(image_id)-1:06}.json")['cameras'][0]
             poses.append(np.array(meta['transformation']))
         poses = np.array(poses).astype(np.float32)
         
